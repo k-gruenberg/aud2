@@ -58,6 +58,68 @@ pub mod aud2 {
         return current_best_x;
     }
 
+    /// Homework #2 Task #1
+    /// An optimal **and** efficient algorithm for solving the CHANGE problem.
+    pub fn change_optimal_dynamic(w: u128, m: &Vec<u128>) -> Vec<u128> {
+        opt_with_result(m.len(), w, m).1
+    }
+
+    /// Homework #2 Task #1
+    /// Returns the minimum **amount** of coins needed, taken from the first `i` coins in `m`,
+    /// to add up to exactly `x`.
+    /// As the parameter `i` suggests, this function is defined recursively.
+    /// This function will **not** tell you which coins to actually choose from `m`, only how many
+    /// in total you have to take.
+    pub fn opt(i: usize, x: u128, m: &Vec<u128>) -> u128 {
+        // "Sei nun opt(i, x) der minimale Wert, wie viele der ersten i Münzen benötigt werden,
+        //  um den Wert x zu erreichen [...] für ein Währungssystem mit Münzen im Wert von"
+        //  1 = m[0] < m[1] < · · · < m[m.len()-1]
+
+        panic_for_invalid_m(&m);
+
+        match (i,x) {
+            (0,0) => 0, // 0 coins from the set {} are needed to reach the value of 0
+            (0,_) => u128::MAX, // it is impossible to reach a value >0 by using coins from the set {}
+            (1,x) => x, // x coins from the set {1} are needed to reach the value of x
+            (i,x) => {
+                // Use the i-th coin n-times, i.e. 0 times or 1 time or ... or x/m[i-1] times
+                //   (do the rest using the other coins 1 to i-1);
+                //   then take the best, i.e. minimum:
+                (0..=x/m[i-1])
+                    .map(|n| n + opt(i-1, x - n*m[i-1], m))
+                    .min()
+                    .expect("iterator always contains at least 1 element")
+            }
+        }
+    }
+
+    /// Homework #2 Task #1
+    /// Does the same as the `opt()` function, but it also keeps track of the result as a vector
+    /// which is returned.
+    /// It might be more convenient to use the `change_optimal_dynamic()` function however!
+    pub fn opt_with_result(i: usize, x: u128, m: &Vec<u128>) -> (u128, Vec<u128>) {
+        panic_for_invalid_m(&m);
+
+        match (i,x) {
+            (0,0) => (0, iter::repeat(0).take(m.len()).collect()), // 0 coins from the set {} are needed to reach the value of 0
+            (0,_) => (u128::MAX, Vec::new()), // it is impossible to reach a value >0 by using coins from the set {}
+            (1,x) => (x, iter::once(x).chain(iter::repeat(0)).take(m.len()).collect()), // x coins from the set {1} are needed to reach the value of x
+            (i,x) => {
+                // Use the i-th coin n-times, i.e. 0 times or 1 time or ... or x/m[i-1] times
+                //   (do the rest using the other coins 1 to i-1);
+                //   then take the best, i.e. minimum:
+                (0..=x/m[i-1])
+                    .map(|n| {
+                        let (amount, mut coins) = opt_with_result(i-1, x - n*m[i-1], m);
+                        coins[i-1] += n; // tool the i-th coin (another) n-times
+                        (n + amount, coins)
+                    })
+                    .min_by_key(|(amount, _coins)| *amount) // (or amount.clone())
+                    .expect("iterator always contains at least 1 element")
+            }
+        }
+    }
+
     fn panic_for_invalid_m(m: &Vec<u128>) {
         if m.len() == 0 {
             panic!("m.len() == 0");
@@ -75,6 +137,57 @@ mod tests {
 
     #[test]
     fn test_change() {
-        todo!()
+        //todo!()
+    }
+
+    #[test]
+    fn test_opt_function() {
+        let coins_without_four = vec![1,2,5,10,20,50,100,200];
+        let coins_with_four = vec![1,2,4,5,10,20,50,100,200];
+
+        // try to add up coins to the total value of $8, with and without a $4 coin:
+        assert_eq!(opt(coins_without_four.len(), 8, &coins_without_four), 3);
+        assert_eq!(opt(coins_with_four.len(), 8, &coins_with_four), 2);
+
+        // Without the use of a $4 coin, the opt() function should return the same as the greedy approach:
+        // 177 = 100 + 50 + 20 + 5 + 2
+        assert_eq!(opt(coins_without_four.len(), 177, &coins_without_four), 5);
+        // 178 = 100 + 50 + 20 + 5 + 2 + 1
+        assert_eq!(opt(coins_without_four.len(), 178, &coins_without_four), 6);
+        // 44 = 20 + 20 + 2 + 2
+        assert_eq!(opt(coins_without_four.len(), 44, &coins_without_four), 4);
+        // 3 = 2 + 1
+        assert_eq!(opt(coins_without_four.len(), 3, &coins_without_four), 2);
+        // 50 = 50
+        assert_eq!(opt(coins_without_four.len(), 50, &coins_without_four), 1);
+    }
+
+    #[test]
+    fn test_opt_with_result_function() {
+        let coins_without_four = vec![1,2,5,10,20,50,100,200];
+        let coins_with_four = vec![1,2,4,5,10,20,50,100,200];
+
+        // try to add up coins to the total value of $8, with and without a $4 coin:
+        assert_eq!(opt_with_result(coins_without_four.len(), 8, &coins_without_four).0, 3);
+        assert_eq!(opt_with_result(coins_without_four.len(), 8, &coins_without_four).1, vec![1,1,1,0,0,0,0,0]);
+        assert_eq!(opt_with_result(coins_with_four.len(), 8, &coins_with_four).0, 2);
+        assert_eq!(opt_with_result(coins_with_four.len(), 8, &coins_with_four).1, vec![0,0,2,0,0,0,0,0,0]);
+
+        // Without the use of a $4 coin, the opt() function should return the same as the greedy approach:
+        // 177 = 100 + 50 + 20 + 5 + 2
+        assert_eq!(opt_with_result(coins_without_four.len(), 177, &coins_without_four).0, 5);
+        assert_eq!(opt_with_result(coins_without_four.len(), 177, &coins_without_four).1, vec![0,1,1,0,1,1,1,0]);
+        // 178 = 100 + 50 + 20 + 5 + 2 + 1
+        assert_eq!(opt_with_result(coins_without_four.len(), 178, &coins_without_four).0, 6);
+        assert_eq!(opt_with_result(coins_without_four.len(), 178, &coins_without_four).1, vec![1,1,1,0,1,1,1,0]);
+        // 44 = 20 + 20 + 2 + 2
+        assert_eq!(opt_with_result(coins_without_four.len(), 44, &coins_without_four).0, 4);
+        assert_eq!(opt_with_result(coins_without_four.len(), 44, &coins_without_four).1, vec![0,2,0,0,2,0,0,0]);
+        // 3 = 2 + 1
+        assert_eq!(opt_with_result(coins_without_four.len(), 3, &coins_without_four).0, 2);
+        assert_eq!(opt_with_result(coins_without_four.len(), 3, &coins_without_four).1, vec![1,1,0,0,0,0,0,0]);
+        // 50 = 50
+        assert_eq!(opt_with_result(coins_without_four.len(), 50, &coins_without_four).0, 1);
+        assert_eq!(opt_with_result(coins_without_four.len(), 50, &coins_without_four).1, vec![0,0,0,0,0,1,0,0]);
     }
 }

@@ -1,9 +1,20 @@
 use aud2::aud2::change_greedy;
 use aud2::aud2::change_optimal_brute_force;
 use aud2::aud2::change_optimal_dynamic;
+use aud2::aud2::subset_sum;
+use aud2::aud2::matrix_transpose;
 
 fn main() {
-    let coins = vec![1,2,4,5,10,20,50,100,200];
+    for vector in matrix_transpose(subset_sum(&vec![7usize,4,1,9,3], 15)) {
+        println!("{:?}", vector);
+    }
+    println!();
+    println!();
+    println!();
+
+
+
+    let coins = vec![1,2,5,10,20,40,50,100,200]; // vec![1,2,4,5,10,20,50,100,200];
 
     println!("w\t\t\tGreedy\t\tBrute-f\t\tDynamic");
 
@@ -13,9 +24,9 @@ fn main() {
     //             = (5 / 1 + 1).pow(9)
     //             = 6.pow(9)
     //             = 10 077 696
-    const BRUTE_FORCE_MAX: u128 = 8;
+    const BRUTE_FORCE_MAX: u128 = 6; // =8
 
-    for w in 0..100 {
+    for w in vec![11,80,562,1123] { // 0..10
         let greedy_solution = change_greedy(w, &coins);
         let optimal_brute_force_solution =
             if w <= BRUTE_FORCE_MAX {Some(change_optimal_brute_force(w, &coins))} else {None};

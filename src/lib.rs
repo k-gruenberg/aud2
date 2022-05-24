@@ -129,6 +129,40 @@ pub mod aud2 {
             panic!("m is not sorted");
         }
     }
+
+    /// Skript S.11, Algorithmus 2.1 "Dynamic Programming fuer SUBSET SUM"
+    pub fn subset_sum(z_i: &Vec<usize>, z: usize) -> Vec<Vec<u8>> {
+        let n = z_i.len();
+        let mut result: Vec<Vec<u8>> = iter::repeat(iter::repeat(0).take(n+1).collect()).take(z+1).collect();
+        result[0][0] = 1;
+        for x in 1..=z {
+            result[x][0] = 0;
+        }
+        for i in 1..=n {
+            for x in 0..=z_i[i-1]-1 {
+                result[x][i] = result[x][i-1];
+            }
+            for x in z_i[i-1]..=z {
+                if result[x][i-1] == 1 || result[x-z_i[i-1]][i-1] == 1 {
+                    result[x][i] = 1;
+                } else {
+                    result[x][i] = 0;
+                }
+            }
+        }
+        return result;
+    }
+
+    /// Helper function, copied from: https://www.hackertouch.com/matrix-transposition-in-rust.html
+    pub fn matrix_transpose<T>(m: Vec<Vec<T>>) -> Vec<Vec<T>> where T: Copy {
+        let mut t = vec![Vec::with_capacity(m.len()); m[0].len()];
+        for r in m {
+            for i in 0..r.len() {
+                t[i].push(r[i]);
+            }
+        }
+        t
+    }
 }
 
 #[cfg(test)]

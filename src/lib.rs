@@ -203,7 +203,7 @@ pub mod aud2 {
 
         let mut j = 1;
         for i in 1..=n {
-            while e[j-1] <= s[i-1].1 {
+            while e[j-1] < s[i-1].1 { // and not <= xD
                 j += 1;
             }
             j -= 1;

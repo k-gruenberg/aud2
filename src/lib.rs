@@ -313,7 +313,14 @@ pub mod aud2 {
         return result_x.iter().zip(sorted_small_p.iter()).map(|(x_i, p_i)| x_i*(*p_i as f64)).sum::<f64>();
     }
 
-    /// Homework #3 Task #2a (Weighted Lecture Hall Problem)
+    /// **Homework #3 Task #2a (Weighted Lecture Hall Problem)**
+    ///
+    /// Returns `[p(0), p(1), p(2), ..., p(n)]` as a vector of `n+1` elements where:
+    /// * `n == s.len() == e.len()`
+    /// * `(s[0], e[0]), ..., (s[n-1], e[n-1])` are intervals with `e[0] <= e[2] <= ... <= e[n-1]`
+    /// * `p(0) := 0`
+    /// * `p(i) := max({j | e[j-1] <= s[i-1]} + {0})`, i.e. `p(i)` is the largest index of the interval
+    ///   that ends the latest but still before interval number `i` begins.
     pub fn ps(s: Vec<u128>, e: Vec<u128>) -> Vec<usize> {
         let n = s.len();
         assert_eq!(n, e.len());

@@ -193,6 +193,7 @@ pub mod aud2 {
     pub fn ps(s: Vec<u128>, e: Vec<u128>) -> Vec<usize> {
         let n = s.len();
         assert_eq!(n, e.len());
+        assert!(is_sorted(&e), "e={:?} is not sorted", &e); // assert!(e.is_sorted()); // unstable Rust
 
         let mut s: Vec<(usize, u128)> = s.into_iter().enumerate().collect();
         s.sort_by_key(|(_i, s_i)| *s_i);
@@ -228,6 +229,16 @@ pub mod aud2 {
         }
 
         return g[n];
+    }
+
+    /// Helper function for ps():
+    fn is_sorted<T>(v: &Vec<T>) -> bool where T: Ord {
+        for i in 0..v.len()-1 {
+            if v[i] > v[i+1] {
+                return false;
+            }
+        }
+        return true;
     }
 }
 
@@ -295,74 +306,78 @@ mod tests {
     fn test_weighted_lecture_hall_problem() {
         /*
         0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-        ================100=================
         ====50====
             ====90====
                            ====5=====
+        ================100=================
          */
-        let s = vec![0, 0, 4, 19];
-        let e = vec![35, 9, 13, 28];
-        let w = vec![100, 50, 90, 5];
+        let s = vec![0, 4, 19, 0];
+        let e = vec![9, 13, 28, 35];
+        let w = vec![50, 90, 5, 100];
+        //assert_eq!(ps(s.clone(), e.clone()), vec![0, ...]);
         assert_eq!(compute_g(s, e, w), 100);
 
         /*
         0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-        ================100=================
         ====50====
                     ====90====
                                 ====5=====
+        ================100=================
          */
-        let s = vec![0, 0, 12, 24];
-        let e = vec![35, 9, 21, 33];
-        let w = vec![100, 50, 90, 5];
+        let s = vec![0, 12, 24, 0];
+        let e = vec![9, 21, 33, 35];
+        let w = vec![50, 90, 5, 100];
         assert_eq!(compute_g(s, e, w), 145);
 
         /*
         0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-        ================100=================
         ====50====
                   ====90====
                             ====5=====
+        ================100=================
          */
-        let s = vec![0, 0, 10, 20];
-        let e = vec![35, 9, 19, 29];
-        let w = vec![100, 50, 90, 5];
+        let s = vec![0, 10, 20, 0];
+        let e = vec![9, 19, 29, 35];
+        let w = vec![50, 90, 5, 100];
         assert_eq!(compute_g(s, e, w), 145);
 
         /*
         0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-        ================100=================
         ====50====
                          ====90====
                                 ====5=====
+        ================100=================
          */
-        let s = vec![0, 0, 17, 24];
-        let e = vec![35, 9, 26, 33];
-        let w = vec![100, 50, 90, 5];
+        let s = vec![0, 17, 24, 0];
+        let e = vec![9, 26, 33, 35];
+        let w = vec![50, 90, 5, 100];
         assert_eq!(compute_g(s, e, w), 140);
 
         /*
         0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-        ================100=================
         ====50====
                  ====90====
                           ====5=====
+        ================100=================
          */
-        let s = vec![0, 0, 9, 18];
-        let e = vec![35, 9, 18, 27];
-        let w = vec![100, 50, 90, 5];
+        let s = vec![0, 9, 18, 0];
+        let e = vec![9, 18, 27, 35];
+        let w = vec![50, 90, 5, 100];
+        assert_eq!(ps(s.clone(), e.clone()), vec![0, 0, 0, 1, 0]);
+        //   "[...] gibt also den größten Index des Intervalls zurück, das am spätesten,
+        //    aber noch vor Intervall I[i] endet"
         assert_eq!(compute_g(s, e, w), 100);
 
         /*
         0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-        ================100=================
         ====50====
-                          ====90====
                  ====5=====
+                          ====90====
+        ================100=================
          */
-        let s = vec![0, 0, 18, 9];
-        let e = vec![35, 9, 27, 18];
-        let w = vec![100, 50, 90, 5];
+        let s = vec![0, 9, 18, 0];
+        let e = vec![9, 18, 27, 35];
+        let w = vec![50, 5, 90, 100];
         assert_eq!(compute_g(s, e, w), 140);
 
         /*
@@ -418,26 +433,16 @@ mod tests {
         let w = vec![100, 200];
         assert_eq!(compute_g(s, e, w), 200);
 
-        /*
-        0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-                            ===100===
-                   ====200===
-         */
-        let s = vec![20, 11];
-        let e = vec![28, 20];
-        let w = vec![100, 200];
-        assert_eq!(compute_g(s, e, w), 200);
-
         // ========== Examples from U1: ==========
 
         /* A counter-example to the shortest-first strategy:
         0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-                   =1=
              ===1===
+                   =1=
                      ===1==
          */
-        let s = vec![11, 5, 13];
-        let e = vec![13, 11, 18];
+        let s = vec![5, 11, 13];
+        let e = vec![11, 13, 18];
         let w = vec![1, 1, 1];
         assert_eq!(compute_g(s, e, w), 2);
 
@@ -459,21 +464,21 @@ mod tests {
 
         /* A counter-example to the few-overlaps strategy:
         0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-              =1=
-              =1=
-              =1=
-                              =1=
-                              =1=
-                              =1=
         ===1===
+              =1=
+              =1=
+              =1=
                 ===1===
-                        ===1===
-                                ===1===
                      ==1==
+                        ===1===
+                              =1=
+                              =1=
+                              =1=
+                                ===1===
          */
-        let s = vec![6, 6, 6, 22, 22, 22, 0, 8, 16, 24, 13];
-        let e = vec![8, 8, 8, 24, 24, 24, 6, 14, 22, 30, 17];
-        let w = vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+        let s = vec![0, 6, 6, 6,  8, 13, 16, 22, 22, 22, 24];
+        let e = vec![6, 8, 8, 8, 14, 17, 22, 24, 24, 24, 30];
+        let w = vec![1, 1, 1, 1,  1,  1,  1,  1,  1,  1,  1];
         assert_eq!(compute_g(s, e, w), 4);
     }
 }

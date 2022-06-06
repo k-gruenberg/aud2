@@ -165,7 +165,9 @@ pub mod aud2 {
     }
 
     /// Homework #3 Task #1
-    pub fn branch_and_bound_maximum_knapsack(recursion_depth: u128) -> () {
+    pub fn branch_and_bound_maximum_knapsack(small_z: &Vec<u128>, big_z: u128,
+                                             small_p: &Vec<u128>, big_p: u128,
+                                             recursion_depth_l: u128, small_b: &Vec<u8>) -> u128 {
         /* ===== ===== Skript, S. 18: ===== =====
         ===== Algorithmus 3.1 Branch-And-Bound als Unterroutine =====
         Eingabe: z[1],...,z[n],Z,p[1],...p[n] (global:Kosten/Nutzenwerte,Kostenschranke)
@@ -187,6 +189,128 @@ pub mod aud2 {
         9:         b[l] := 1; Branch-and-Bound(l+1);
         10:    return
          */
+        let mut big_p = big_p;
+        let n = small_z.len();
+        assert_eq!(n, small_p.len());
+
+        if small_b.iter().zip(small_z.iter()).map(|(b_j, z_j)| (*b_j as u128)*z_j).sum::<u128>() > big_z {
+            println!("{}{:?} is not allowed", "\t".repeat((recursion_depth_l-1) as usize), small_b);
+            return big_p; // not allowed
+        }
+        let big_l = maximum_knapsack_greedy0_lower_bound(small_z, big_z, small_p, small_b);
+        if big_l > big_p {
+            big_p = big_l;
+        }
+        if recursion_depth_l > (n as u128) {
+            println!("{}reached leaf {:?}", "\t".repeat((recursion_depth_l-1) as usize), small_b);
+            return big_p; // reached leaf
+        }
+        let big_u = fractional_knapsack(small_z, big_z, small_p, small_b); // upper bound
+        let big_u = big_u.floor() as u128; // the upper bound can be rounded down when it's fractional
+        println!("{}U = {}", "\t".repeat((recursion_depth_l-1) as usize), big_u);
+        println!("{}P = {}", "\t".repeat((recursion_depth_l-1) as usize), big_p);
+        if big_u > big_p {
+            let big_p_branch_left = branch_and_bound_maximum_knapsack(
+                small_z, big_z,small_p, big_p,
+                recursion_depth_l+1,
+                &small_b.clone().into_iter().chain(iter::once(0u8)).collect());
+            let big_p_branch_right = branch_and_bound_maximum_knapsack(
+                small_z, big_z,small_p, big_p,
+                recursion_depth_l+1,
+                &small_b.clone().into_iter().chain(iter::once(1u8)).collect());
+            big_p = big_p.max(big_p_branch_left).max(big_p_branch_right);
+        }
+        return big_p;
+    }
+
+    pub fn maximum_knapsack_greedy0_lower_bound(small_z: &Vec<u128>, big_z: u128,
+                                                small_p: &Vec<u128>, fixated_small_b: &Vec<u8>) -> u128 {
+        /* ====== HA-Blatt 1: ======
+        1: function Greedy0(z1,...,zn,Z,p1,...,pn)
+        2:     Sortiere Objekte nach z[i]/p[i] aufsteigend; dies ergibt Permutation π(1),...,π(n).
+        3:     for j := 1 to n do
+        4:         if SIGMA(i=1,j-1) x[π(i)]*z[π(i)] <= Z then
+        5:             x[π(j)] := 1
+        6:         else
+        7:             x[π(j)] := 0
+        8:      return x[1],...,x[n]
+         */
+        let n = small_z.len();
+        assert_eq!(n, small_p.len());
+
+        //let mut result_x: Vec<u8> = iter::repeat(0).take(n).collect(); // without fixation
+        // with fixation:
+        let fixated_small_b_len = fixated_small_b.len();
+        let mut result_x: Vec<u8> = fixated_small_b
+            .clone()
+            .into_iter()
+            .chain(iter::repeat(0).take(n-fixated_small_b_len))
+            .collect();
+        let mut objects: Vec<(u128, u128)> = small_z.clone().into_iter().zip(small_p.clone().into_iter()).collect();
+        objects.sort_by(|(z_i1, p_i1), (z_i2, p_i2)|
+                            ((*z_i1 as f64) / (*p_i1 as f64)).partial_cmp(&((*z_i2 as f64) / (*p_i2 as f64)))
+                                .unwrap()); // unwrap because partial_cmp returns an Option
+
+        let sorted_small_z: Vec<u128> = objects.iter().map(|(z_i, _p_i)| *z_i).collect();
+        let sorted_small_p: Vec<u128> = objects.iter().map(|(_z_i, p_i)| *p_i).collect();
+
+        for j in fixated_small_b_len..n { //for j in 0..n { // without fixation
+            if j<n && result_x.iter().zip(sorted_small_z.iter()).map(|(x_i, z_i)| (*x_i as u128)*z_i).sum::<u128>() + 1*(*sorted_small_z.iter().nth(j).unwrap()) <= big_z {
+                result_x[j] = 1;
+            } else {
+                result_x[j] = 0;
+            }
+        }
+        return result_x.iter().zip(sorted_small_p.iter()).map(|(x_i, p_i)| (*x_i as u128)*p_i).sum::<u128>(); // see above
+    }
+
+    pub fn fractional_knapsack(small_z: &Vec<u128>, big_z: u128,
+                               small_p: &Vec<u128>, fixated_small_b: &Vec<u8>) -> f64 {
+        /*
+        ====== Skript S.3: Algorithmus 1.4 Greedy-Algorithmus für Fractional Knapsack ======
+        Eingabe: z[1],...,z[n],Z,p[1],...,p[n]
+        Ausgabe: x[1],...,x[n] ∈[0,1]
+        mit SIGMA(i=1,n) z[i]*x[i] <= Z
+        und SIGMA(i=1,n) p[i]*x[i] = Maximal
+
+        1: Sortiere {1,...,n} nach z[i]/p[i] aufsteigend; Dies ergibt die Permutation π(1),...,π(n).
+           Setze j = 1.
+        2: while (SIGMA(i=1,j) z[π(i)] <= Z) do
+        3:     x[π(j)] := 1
+        4:     j := j + 1
+        5: Setze x[π(j)] := (Z - SIGMA(i=1,j-1) z[π(i)] ) / z[π(j)]
+        6: return
+         */
+        let n = small_z.len();
+        assert_eq!(n, small_p.len());
+
+        /* Copied from maximum_knapsack_greedy0_lower_bound() function above: */
+        let fixated_small_b_len = fixated_small_b.len();
+        let mut result_x: Vec<f64> = fixated_small_b
+            .into_iter()
+            .map(|&x| x as f64)
+            .chain(iter::repeat(0f64).take(n-fixated_small_b_len))
+            .collect();
+        let mut objects: Vec<(u128, u128)> = small_z.clone().into_iter().zip(small_p.clone().into_iter()).collect();
+        objects.sort_by(|(z_i1, p_i1), (z_i2, p_i2)|
+            ((*z_i1 as f64) / (*p_i1 as f64)).partial_cmp(&((*z_i2 as f64) / (*p_i2 as f64)))
+                .unwrap()); // unwrap because partial_cmp returns an Option
+        /* */
+        //println!("objects = {:?}", objects); // for bug-fixing
+        let sorted_small_z: Vec<u128> = objects.iter().map(|(z_i, _p_i)| *z_i).collect();
+        let sorted_small_p: Vec<u128> = objects.iter().map(|(_z_i, p_i)| *p_i).collect();
+
+        let mut j = fixated_small_b_len; // let mut j = 0; // without fixation
+        while j<n && result_x.iter().zip(sorted_small_z.iter()).map(|(x_i, z_i)| x_i*(*z_i as f64)).sum::<f64>() + 1.0*(*sorted_small_z.iter().nth(j).unwrap() as f64) <= (big_z as f64) {
+            result_x[j] = 1.0;
+            j += 1;
+        }
+        if j<n {
+            result_x[j] = ((big_z as f64) - result_x.iter().zip(sorted_small_z.iter()).map(|(x_i, z_i)| x_i * (*z_i as f64)).sum::<f64>())
+                / (*sorted_small_z.iter().nth(j).unwrap() as f64); // Setze x[π(j)] := (Z - SIGMA(i=1,j-1) z[π(i)] ) / z[π(j)]
+        }
+        //println!("result_x = {:?}", result_x); // for bug-fixing
+        return result_x.iter().zip(sorted_small_p.iter()).map(|(x_i, p_i)| x_i*(*p_i as f64)).sum::<f64>();
     }
 
     /// Homework #3 Task #2a (Weighted Lecture Hall Problem)
@@ -248,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_change() {
-        //todo!()
+        todo!()
     }
 
     #[test]
@@ -300,6 +424,94 @@ mod tests {
         // 50 = 50
         assert_eq!(opt_with_result(coins_without_four.len(), 50, &coins_without_four).0, 1);
         assert_eq!(opt_with_result(coins_without_four.len(), 50, &coins_without_four).1, vec![0,0,0,0,0,1,0,0]);
+    }
+
+    #[test]
+    fn test_branch_and_bound_maximum_knapsack() {
+        // Example from Homework #3:
+        let result = branch_and_bound_maximum_knapsack(
+            &vec![18, 19, 9, 13], 32,
+            &vec![21, 19, 8, 11], 0, // best known solution is initially 0
+            1, &vec![] // initial recursion depth is 1 and nothing is fixed yet
+        );
+        assert_eq!(result, 32); // 32 should be the best result by taking the elements #1 and #4
+
+        println!();
+        println!();
+        println!();
+
+        // Example from U3:
+        let result = branch_and_bound_maximum_knapsack(
+            &vec![11, 5, 13, 18, 9], 33,
+            &vec![14, 6, 13, 16, 7], 0,
+            1, &vec![]
+        );
+        assert_eq!(result, 34)
+    }
+
+    #[test]
+    fn test_branch_and_bound_maximum_knapsack_lower_bound() {
+        // maximum_knapsack_greedy0_lower_bound(small_z: &Vec<u128>, big_z: u128,
+        //                                      small_p: &Vec<u128>, fixated_small_b: &Vec<u8>) -> u128
+
+        // Blatt #3 Aufgabe #1:
+        assert_eq!(29, maximum_knapsack_greedy0_lower_bound(&vec![18, 19, 9, 13], 32,
+                                                            &vec![21, 19, 8, 11], &vec![]));
+        // 1) fix b1=0:
+        assert_eq!(27, maximum_knapsack_greedy0_lower_bound(&vec![18, 19, 9, 13], 32,
+                                                            &vec![21, 19, 8, 11], &vec![0]));
+        // 2) fix b1=0 and b2=0:
+        assert_eq!(19, maximum_knapsack_greedy0_lower_bound(&vec![18, 19, 9, 13], 32,
+                                                            &vec![21, 19, 8, 11], &vec![0, 0]));
+        // 3) fix b1=0, b2=1 and b3=0:
+        assert_eq!(30, maximum_knapsack_greedy0_lower_bound(&vec![18, 19, 9, 13], 32,
+                                                            &vec![21, 19, 8, 11], &vec![0, 1, 0]));
+        // 4) fix b1=1 and b2=0:
+        assert_eq!(29, maximum_knapsack_greedy0_lower_bound(&vec![18, 19, 9, 13], 32,
+                                                            &vec![21, 19, 8, 11], &vec![1, 0]));
+        // 5) fix b1=1, b2=0 and b3=0:
+        assert_eq!(32, maximum_knapsack_greedy0_lower_bound(&vec![18, 19, 9, 13], 32,
+                                                            &vec![21, 19, 8, 11], &vec![1, 0, 0]));
+        // 6) fix b1=1, b2=0 and b3=1: (== 4))
+        assert_eq!(29, maximum_knapsack_greedy0_lower_bound(&vec![18, 19, 9, 13], 32,
+                                                            &vec![21, 19, 8, 11], &vec![1, 0, 1]));
+    }
+
+    #[test]
+    fn test_branch_and_bound_maximum_knapsack_upper_bound() {
+        // fractional_knapsack(small_z: &Vec<u128>, big_z: u128,
+        //                     small_p: &Vec<u128>, fixated_small_b: &Vec<u8>) -> f64
+
+        // Blatt #3 Aufgabe #1:
+        assert_eq!(35.0, fractional_knapsack(&vec![18, 19, 9, 13], 32,
+                                             &vec![21, 19, 8, 11], &vec![]));
+
+        // 1) fix b1=0:
+        assert!((30.0+5.0/13.0 - fractional_knapsack(&vec![18, 19, 9, 13], 32,
+                                                      &vec![21, 19, 8, 11], &vec![0])
+        ).abs() < 0.00000001);
+
+        // 2) fix b1=0 and b2=0:
+        assert_eq!(19.0, fractional_knapsack(&vec![18, 19, 9, 13], 32,
+                                             &vec![21, 19, 8, 11], &vec![0, 0]));
+
+        // 3) fix b1=0, b2=1 and b3=0:
+        assert_eq!(30.0, fractional_knapsack(&vec![18, 19, 9, 13], 32,
+                                             &vec![21, 19, 8, 11], &vec![0, 1, 0]));
+
+        // 4) fix b1=1 and b2=0:
+        assert!((33.2308 - fractional_knapsack(&vec![18, 19, 9, 13], 32,
+                                             &vec![21, 19, 8, 11], &vec![1, 0])
+        ).abs() < 0.001);
+
+        // 5) fix b1=1, b2=0 and b3=0:
+        assert_eq!(32.0, fractional_knapsack(&vec![18, 19, 9, 13], 32,
+                                             &vec![21, 19, 8, 11], &vec![1, 0, 0]));
+
+        // 6) fix b1=1, b2=0 and b3=1: (== 4))
+        assert!((33.2308 - fractional_knapsack(&vec![18, 19, 9, 13], 32,
+                                             &vec![21, 19, 8, 11], &vec![1, 0, 1])
+        ).abs() < 0.001);
     }
 
     #[test]

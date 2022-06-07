@@ -1,7 +1,9 @@
+/// Algorithms from or solving problems from the lecture *Algorithmen und Datenstrukturen 2*
+/// at *Technische Universität Braunschweig* and/or its exercise sheets.
 pub mod aud2 {
     use std::iter;
 
-    /// Homework #2 Task #1
+    /// **Homework #2 Task #1**
     /// The Greedy Algorithm solving the CHANGE problem, as given on the second exercise sheet.
     /// May or may not solve the CHANGE problem optimally, depending on the vector `m`!
     pub fn change_greedy(mut w: u128, m: &Vec<u128>) -> Vec<u128> { // (pseudo-code: "function Change(W, m[1], ..., m[small_m])")
@@ -18,7 +20,7 @@ pub mod aud2 {
         return x; // (pseudo-code: "return x[1], ..., x[m]")
     }
 
-    /// Homework #2 Task #1
+    /// **Homework #2 Task #1**
     /// A very naive and **very inefficient** brute-force algorithm for solving the CHANGE problem optimally.
     pub fn change_optimal_brute_force(w: u128, m: &Vec<u128>) -> Vec<u128> {
         panic_for_invalid_m(&m);
@@ -58,13 +60,13 @@ pub mod aud2 {
         return current_best_x;
     }
 
-    /// Homework #2 Task #1
+    /// **Homework #2 Task #1**
     /// An optimal **and** efficient algorithm for solving the CHANGE problem.
     pub fn change_optimal_dynamic(w: u128, m: &Vec<u128>) -> Vec<u128> {
         opt_with_result(m.len(), w, m).1
     }
 
-    /// Homework #2 Task #1
+    /// **Homework #2 Task #1**
     /// Returns the minimum **amount** of coins needed, taken from the first `i` coins in `m`,
     /// to add up to exactly `x`.
     /// As the parameter `i` suggests, this function is defined recursively.
@@ -93,7 +95,7 @@ pub mod aud2 {
         }
     }
 
-    /// Homework #2 Task #1
+    /// **Homework #2 Task #1**
     /// Does the same as the `opt()` function, but it also keeps track of the result as a vector
     /// which is returned.
     /// It might be more convenient to use the `change_optimal_dynamic()` function however!
@@ -120,6 +122,12 @@ pub mod aud2 {
         }
     }
 
+    /// Helper function for the `CHANGE` problem and functions
+    /// [change_greedy], [change_optimal_brute_force], [opt] and [opt_with_result].
+    /// Panics whenever a constraint for the parameter `m` to the `CHANGE` problem (which is
+    /// the list of available coins) is violated. These contraints are:
+    /// * `m[0] == 1` (i.e. there has to be a `1` coin)
+    /// * `m[0] < m[1] < m[2] < ...`
     fn panic_for_invalid_m(m: &Vec<u128>) {
         if m.len() == 0 {
             panic!("m.len() == 0");
@@ -130,7 +138,18 @@ pub mod aud2 {
         }
     }
 
-    /// Skript S.11, Algorithmus 2.1 "Dynamic Programming fuer SUBSET SUM"
+    /// **Skript S.11, Algorithmus 2.1 "Dynamic Programming fuer SUBSET SUM"**
+    ///
+    /// Solves the `SUBSET SUM` problem (optimally) using *dynamic programming*.
+    ///
+    /// The `SUBSET SUM` problem is defined as follows:
+    /// Let there be `n` objects `0,...,n-1`, each with size `z_i[0],...,z_i[n-1]`.
+    /// Can we find a subset `S` of the set `{0,...,n-1}` such that the sum of all `z_i[i]` for all
+    /// `i` in `S` is exactly equal to a given destination value `z`?
+    ///
+    /// This algorithm creates and returns a table in order to solve this problem.
+    /// `result[x][i]` says whether the number `x` can be created using the first `i` values in `z_i`
+    /// (both `x` and `i` begin at `0`).
     pub fn subset_sum(z_i: &Vec<usize>, z: usize) -> Vec<Vec<u8>> {
         let n = z_i.len();
         let mut result: Vec<Vec<u8>> = iter::repeat(iter::repeat(0).take(n + 1).collect()).take(z + 1).collect();
@@ -154,6 +173,11 @@ pub mod aud2 {
     }
 
     /// Helper function, copied from: https://www.hackertouch.com/matrix-transposition-in-rust.html
+    ///
+    /// Transposes the given matrix `m`.
+    ///
+    /// Used to display the result of [subset_sum] to stdout in the same format
+    /// that is used in the lecture.
     pub fn matrix_transpose<T>(m: Vec<Vec<T>>) -> Vec<Vec<T>> where T: Copy {
         let mut t = vec![Vec::with_capacity(m.len()); m[0].len()];
         for r in m {
@@ -164,7 +188,24 @@ pub mod aud2 {
         t
     }
 
-    /// Homework #3 Task #1
+    /// **Homework #3 Task #1**
+    ///
+    /// Solves the `MAXIMUM KNAPSACK` problem **optimally** using the *branch and bound* strategy
+    /// (see [maximum_knapsack_greedy0_lower_bound] for a definition of the `MAXIMUM KNAPSACK` problem
+    /// and the definitions of `small_z`, `big_z` and `small_p`).
+    ///
+    /// Returns the maximum possible total value of items that can be achieved by putting items
+    /// into the knapsack of capacity `big_z`.
+    ///
+    /// **Note:** During computation, i.e. branching, the intermediate results will be
+    /// printed to stdout in a tree-like manner.
+    ///
+    /// **Note:** This is a recursive function. Initially, `big_p` has to be set to `0`,
+    /// `recursion_depth_l` to `1`
+    /// and `small_b` `&vec![]`.
+    /// `big_p` is the best solution known so far, `l` is the next index to branch over and
+    /// `small_b` describes the binary decisions made/fixated so far, i.e. the current position
+    /// in the tree.
     pub fn branch_and_bound_maximum_knapsack(small_z: &Vec<u128>, big_z: u128,
                                              small_p: &Vec<u128>, big_p: u128,
                                              recursion_depth_l: u128, small_b: &Vec<u8>) -> u128 {
@@ -223,6 +264,26 @@ pub mod aud2 {
         return big_p;
     }
 
+
+    /// Solves the `MAXIMUM KNAPSACK` problem **non-optimally** using a *greedy algorithm*.
+    ///
+    /// The `MAXIMUM KNAPSACK` problem is defined as follows:
+    ///
+    /// Let there be a knapsack of capacity `big_z` and let there be `n` objects, each
+    /// of size `small_z[0], ..., small_z[n-1]` and of value `small_p[0], ..., small_p[n-1]`.
+    /// What is the maximum total value we can achieve by putting objects into the knapsack
+    /// but still obeying the maximum capacity `big_z`?
+    ///
+    /// **Important:** Unlike `FRACTIONAL KNAPSACK`, `MAXIMUM KNAPSACK` does **not** allow objects
+    /// to be put into the knapsack partially/to any arbitrary fraction! Every objects either has
+    /// to be taken as a whole or not at all!
+    ///
+    /// **Note:** When the `fixated_small_b` given is not the empty vector `vec![]`, the `n`-th
+    /// object will be definitely *not* taken when `fixated_small_b[n-1] == 0` and it *will* be
+    /// definitely taken when `fixated_small_b[n-1] == 1`.
+    ///
+    /// **Note:** This function gives a **lower bound** for the `MAXIMUM KNAPSACK`
+    /// problem as it is a naive and not necessarily optimal solution for it.
     pub fn maximum_knapsack_greedy0_lower_bound(small_z: &Vec<u128>, big_z: u128,
                                                 small_p: &Vec<u128>, fixated_small_b: &Vec<u8>) -> u128 {
         /* ====== HA-Blatt 1: ======
@@ -249,10 +310,10 @@ pub mod aud2 {
         let mut objects: Vec<(u128, u128)> = small_z.clone().into_iter().zip(small_p.clone().into_iter()).collect();
         objects.sort_by(|(z_i1, p_i1), (z_i2, p_i2)|
                             ((*z_i1 as f64) / (*p_i1 as f64)).partial_cmp(&((*z_i2 as f64) / (*p_i2 as f64)))
-                                .unwrap()); // unwrap because partial_cmp returns an Option
+                                .unwrap()); // unwrap because partial_cmp returns an Option  // ToDo: unnecessary sorting?!
 
-        let sorted_small_z: Vec<u128> = objects.iter().map(|(z_i, _p_i)| *z_i).collect();
-        let sorted_small_p: Vec<u128> = objects.iter().map(|(_z_i, p_i)| *p_i).collect();
+        let sorted_small_z: Vec<u128> = objects.iter().map(|(z_i, _p_i)| *z_i).collect(); // ToDo: unnecessary sorting?!
+        let sorted_small_p: Vec<u128> = objects.iter().map(|(_z_i, p_i)| *p_i).collect(); // ToDo: unnecessary sorting?!
 
         for j in fixated_small_b_len..n { //for j in 0..n { // without fixation
             if j<n && result_x.iter().zip(sorted_small_z.iter()).map(|(x_i, z_i)| (*x_i as u128)*z_i).sum::<u128>() + 1*(*sorted_small_z.iter().nth(j).unwrap()) <= big_z {
@@ -264,6 +325,26 @@ pub mod aud2 {
         return result_x.iter().zip(sorted_small_p.iter()).map(|(x_i, p_i)| (*x_i as u128)*p_i).sum::<u128>(); // see above
     }
 
+    /// Solves the `FRACTIONAL KNAPSACK` problem optimally using a *greedy algorithm*.
+    ///
+    /// The `FRACTIONAL KNAPSACK` problem is defined as follows:
+    ///
+    /// Let there be a knapsack of capacity `big_z` and let there be `n` objects, each
+    /// of size `small_z[0], ..., small_z[n-1]` and of value `small_p[0], ..., small_p[n-1]`.
+    /// What is the maximum total value we can achieve by putting objects into the knapsack
+    /// but still obeying the maximum capacity `big_z`?
+    ///
+    /// **Important:** `FRACTIONAL KNAPSACK` allows objects to be put into the knapsack partially,
+    /// i.e. to any arbitrary fraction!
+    ///
+    /// **Note:** When the `fixated_small_b` given is not the empty vector `vec![]`, the `n`-th
+    /// object will be definitely *not* taken when `fixated_small_b[n-1] == 0` and it *will* be
+    /// definitely taken when `fixated_small_b[n-1] == 1`. In this case,
+    /// the function does not return the optimal solution for the total problem but rather
+    /// for the problem with some objects fixed, as defined in the given `fixated_small_b` vector.
+    ///
+    /// **Note:** This function gives an **upper bound** for the more strict `MAXIMUM KNAPSACK`
+    /// problem which does not allow objects to be taken partially.
     pub fn fractional_knapsack(small_z: &Vec<u128>, big_z: u128,
                                small_p: &Vec<u128>, fixated_small_b: &Vec<u8>) -> f64 {
         /*
@@ -294,11 +375,11 @@ pub mod aud2 {
         let mut objects: Vec<(u128, u128)> = small_z.clone().into_iter().zip(small_p.clone().into_iter()).collect();
         objects.sort_by(|(z_i1, p_i1), (z_i2, p_i2)|
             ((*z_i1 as f64) / (*p_i1 as f64)).partial_cmp(&((*z_i2 as f64) / (*p_i2 as f64)))
-                .unwrap()); // unwrap because partial_cmp returns an Option
+                .unwrap()); // unwrap because partial_cmp returns an Option  // ToDo: unnecessary sorting?!
         /* */
         //println!("objects = {:?}", objects); // for bug-fixing
-        let sorted_small_z: Vec<u128> = objects.iter().map(|(z_i, _p_i)| *z_i).collect();
-        let sorted_small_p: Vec<u128> = objects.iter().map(|(_z_i, p_i)| *p_i).collect();
+        let sorted_small_z: Vec<u128> = objects.iter().map(|(z_i, _p_i)| *z_i).collect(); // ToDo: unnecessary sorting?!
+        let sorted_small_p: Vec<u128> = objects.iter().map(|(_z_i, p_i)| *p_i).collect(); // ToDo: unnecessary sorting?!
 
         let mut j = fixated_small_b_len; // let mut j = 0; // without fixation
         while j<n && result_x.iter().zip(sorted_small_z.iter()).map(|(x_i, z_i)| x_i*(*z_i as f64)).sum::<f64>() + 1.0*(*sorted_small_z.iter().nth(j).unwrap() as f64) <= (big_z as f64) {
@@ -319,7 +400,7 @@ pub mod aud2 {
     /// * `n == s.len() == e.len()`
     /// * `(s[0], e[0]), ..., (s[n-1], e[n-1])` are intervals with `e[0] <= e[2] <= ... <= e[n-1]`
     /// * `p(0) := 0`
-    /// * `p(i) := max({j | e[j-1] <= s[i-1]} + {0})`, i.e. `p(i)` is the largest index of the interval
+    /// * `p(i) := max({j | e[j-1] < s[i-1]} + {0})`, i.e. `p(i)` is the largest index of the interval
     ///   that ends the latest but still before interval number `i` begins.
     pub fn ps(s: Vec<u128>, e: Vec<u128>) -> Vec<usize> {
         let n = s.len();
@@ -334,7 +415,12 @@ pub mod aud2 {
 
         let mut j = 1;
         for i in 1..=n {
-            while e[j-1] < s[i-1].1 { // and not <= xD
+            // For my Rust implementation it has to be "<" and not "<="
+            //   because in my test cases, I interpret the intervals intuitively
+            //   as closed intervals [s, e].
+            //   The official task however understands them as open intervals (s, e).
+            //   Therefore, the official solution requires a "<=" instead of a "<"!
+            while e[j-1] < s[i-1].1 {
                 j += 1;
             }
             j -= 1;
@@ -345,7 +431,16 @@ pub mod aud2 {
         return p;
     }
 
-    /// Homework #3 Task #2b (Weighted Lecture Hall Problem)
+    /// **Homework #3 Task #2b (Weighted Lecture Hall Problem)**
+    ///
+    /// Solves the *Weighted Lecture Hall Problem*:
+    ///
+    /// When `(s[0], e[0]), ..., (s[n-1], e[n-1])` are intervals with
+    /// `e[0] <= e[2] <= ... <= e[n-1]` and weights `w[0], ..., w[n-1]`, then `G(j)` is the largest
+    /// possible value of the sum of all `w[i]` for all `i` in a set `S`
+    /// which is a subset of disjoint intervals, i.e. a subset of `{0,...,j-1}`.
+    ///
+    /// This function returns `G(n)`.
     pub fn compute_g(s: Vec<u128>, e: Vec<u128>, w: Vec<u128>) -> u128 {
         let n = s.len();
         assert_eq!(n, e.len());
@@ -362,7 +457,11 @@ pub mod aud2 {
         return g[n];
     }
 
-    /// Helper function for ps():
+    /// Helper function for `ps()`:
+    ///
+    /// Checks for a given vector `v` whether it is sorted in ascending order (non-strict), i.e.
+    /// whether `v[0] <= v[1] <= ... <= v[v.len()-1]`
+    /// Returns false if and only if there is an index `i` such that `v[i] > v[i+1]`.
     fn is_sorted<T>(v: &Vec<T>) -> bool where T: Ord {
         for i in 0..v.len()-1 {
             if v[i] > v[i+1] {

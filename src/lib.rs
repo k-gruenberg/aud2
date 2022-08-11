@@ -202,7 +202,7 @@ pub mod aud2 {
     ///
     /// **Note:** This is a recursive function. Initially, `big_p` has to be set to `0`,
     /// `recursion_depth_l` to `1`
-    /// and `small_b` `&vec![]`.
+    /// and `small_b` to `&vec![]`.
     /// `big_p` is the best solution known so far, `l` is the next index to branch over and
     /// `small_b` describes the binary decisions made/fixated so far, i.e. the current position
     /// in the tree.

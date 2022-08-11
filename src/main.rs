@@ -1,10 +1,17 @@
-use aud2::aud2::change_greedy;
+use aud2::aud2::{branch_and_bound_maximum_knapsack, change_greedy};
 use aud2::aud2::change_optimal_brute_force;
 use aud2::aud2::change_optimal_dynamic;
 use aud2::aud2::subset_sum;
 use aud2::aud2::matrix_transpose;
 
 fn main() {
+    println!("{}",
+        branch_and_bound_maximum_knapsack(&vec![50,5,5,50,10,20,10], 56,
+                                      &vec![100,10,10,50,10,5,1], 0,
+                                          1, &vec![])
+    );
+    return;
+
     for vector in matrix_transpose(subset_sum(&vec![7usize,4,1,9,3], 15)) {
         println!("{:?}", vector);
     }

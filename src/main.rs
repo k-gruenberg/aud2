@@ -4,10 +4,31 @@ use aud2::aud2::change_optimal_dynamic;
 use aud2::aud2::subset_sum;
 use aud2::aud2::matrix_transpose;
 
+use clap::{Parser};
+
+///
+#[derive(Parser, Debug)]
+#[clap(about, version, author)]
+struct Args {
+    ///
+    #[clap(long)]
+    big_z: u128,
+
+    ///
+    #[clap(long)]
+    small_z: Vec<u128>,
+
+    ///
+    #[clap(long)]
+    small_p: Vec<u128>
+}
+
 fn main() {
+    let args = Args::parse();
+
     println!("{}",
-        branch_and_bound_maximum_knapsack(&vec![50,5,5,50,10,20,10], 56,
-                                      &vec![100,10,10,50,10,5,1], 0,
+        branch_and_bound_maximum_knapsack(&args.small_z, args.big_z,
+                                      &args.small_p, 0,
                                           1, &vec![])
     );
     return;
